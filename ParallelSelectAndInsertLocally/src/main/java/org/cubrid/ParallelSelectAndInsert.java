@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 public class ParallelSelectAndInsert {
 	private static final Logger LOGGER = Logger.getLogger(ParallelSelectAndInsert.class.getName());
 	
-	public static final int DEFAULT_BATCH_COUNT = 5000;
+	public static final int DEFAULT_BATCH_COUNT = 1000;
 
 	private ConnectionManager manager;
 
