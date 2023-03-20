@@ -34,7 +34,7 @@ public class ProgressBarTask implements Callable<Void> {
 				isFinished = true;
 			}
 
-			LOGGER.log(Level.INFO, String.format("Progress: %s %s/%s(-%s)", getProgressBar(progress, total), progress,
+			LOGGER.log(Level.INFO, String.format("Progress: %s %s/%s (-%s)", getProgressBar(progress, total), progress,
 					total, (total - progress)));
 
 			if (isFinished) {
