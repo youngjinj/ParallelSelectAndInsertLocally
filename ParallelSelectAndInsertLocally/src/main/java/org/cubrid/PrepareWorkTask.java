@@ -24,7 +24,7 @@ public class PrepareWorkTask implements Callable<Void> {
 	}
 
 	@Override
-	public Void call() throws Exception {
+	public Void call() {
 		LOGGER.log(Level.INFO, String.format("[%s] Starting prepare task", Thread.currentThread().getName()));
 
 		long nextOffset = 0L;

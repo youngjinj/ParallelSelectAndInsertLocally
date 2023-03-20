@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -132,9 +133,8 @@ public class ParallelSelectAndInsert {
 			
 			executorInsertService = Executors.newFixedThreadPool(numThreads);
 
-			List<Future<Void>> copyFutureList = null;
 			try {
-				copyFutureList = executorInsertService.invokeAll(copyTaskList);
+				executorInsertService.invokeAll(copyTaskList);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -150,7 +150,18 @@ public class ParallelSelectAndInsert {
 			doCloseConnection();
 
 			executorInsertService.shutdown();
+			try {
+				executorInsertService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
 			executorPrepareService.shutdown();
+			try {
+				executorPrepareService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 
 			return;
 		} catch (Exception e) {
@@ -161,7 +172,12 @@ public class ParallelSelectAndInsert {
 		 * Exception
 		 */
 		
-		doRollback();
+		try {
+			doRollback();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
 		doCloseConnection();
 		
 		if (!executorInsertService.isTerminated()) {
@@ -175,36 +191,61 @@ public class ParallelSelectAndInsert {
 		return;
 	}
 
-	private void doCommit() {
+	private void doCommit() throws InterruptedException {
 		if (destinationConnectionList == null) {
 			return;
 		}
 
 		try {
-			for (Connection connection : destinationConnectionList) {
-				connection.commit();
+			List<CommitTask> commitTask = new ArrayList<CommitTask>(numThreads);
+			
+			for (int i = 0; i < numThreads; i++) {
+				Connection connection = destinationConnectionList.get(i);
+				commitTask.add(new CommitTask(connection));
 			}
 			
-			LOGGER.log(Level.INFO, "Committed ");
-		} catch (SQLException e) {
-			LOGGER.log(Level.SEVERE, "Commit failed and transaction is being rolled back", e);
-			doRollback();
+			ExecutorService executorCommitService = Executors.newFixedThreadPool(numThreads);
+			executorCommitService.invokeAll(commitTask);
+			
+			executorCommitService.shutdown();
+			try {
+				executorCommitService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			LOGGER.log(Level.INFO, "Committed");
+		} catch (InterruptedException e) {
+			throw e;
 		}
 	}
 
-	private void doRollback() {
+	private void doRollback() throws InterruptedException {
 		if (destinationConnectionList == null) {
 			return;
 		}
 
 		try {
-			for (Connection connection : destinationConnectionList) {
-				connection.rollback();
+			List<RollbackTask> rollbackTask = new ArrayList<RollbackTask>(numThreads);
+			
+			for (int i = 0; i < numThreads; i++) {
+				Connection connection = destinationConnectionList.get(i);
+				rollbackTask.add(new RollbackTask(connection));
 			}
 			
-			LOGGER.log(Level.INFO, "Rollback ");
-		} catch (SQLException e) {
-			LOGGER.log(Level.SEVERE, "Failed to rollback transaction", e);
+			ExecutorService executorRollbackService = Executors.newFixedThreadPool(numThreads);
+			executorRollbackService.invokeAll(rollbackTask);
+			
+			executorRollbackService.shutdown();
+			try {
+				executorRollbackService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			LOGGER.log(Level.INFO, "Rollback");
+		} catch (InterruptedException e) {
+			throw e;
 		}
 	}
 
