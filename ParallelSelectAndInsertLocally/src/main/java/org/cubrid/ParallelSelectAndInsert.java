@@ -82,7 +82,6 @@ public class ParallelSelectAndInsert {
 				return;
 			}
 			
-			rowCount = 1000000;
 			progressBar.setTotal(rowCount);
 
 			/*-
