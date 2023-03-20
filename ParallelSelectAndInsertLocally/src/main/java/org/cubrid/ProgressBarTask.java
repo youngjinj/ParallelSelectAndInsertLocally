@@ -57,7 +57,7 @@ public class ProgressBarTask implements Callable<Void> {
 		int progressPercentage = (int) (((double) progress / (double) total) * 100);
 		int numberOfBars = progressPercentage / 5;
 
-		progressBar.append(String.format("%3s", progressPercentage)).append(" ").append("[");
+		progressBar.append(String.format("%3s", progressPercentage)).append("%").append(" ").append("[");
 
 		for (int i = 0; i < numberOfBars; i++) {
 			progressBar.append("=");
@@ -67,7 +67,7 @@ public class ProgressBarTask implements Callable<Void> {
 			progressBar.append(" ");
 		}
 
-		progressBar.append("]").append(" ").append("%");
+		progressBar.append("]");
 
 		return progressBar.toString();
 	}
