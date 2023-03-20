@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.util.concurrent.Callable;
 
 public class CommitTask implements Callable<Void> {
-
 	private Connection connection;
 
 	public CommitTask(Connection connection) {
@@ -13,14 +12,13 @@ public class CommitTask implements Callable<Void> {
 	}
 
 	@Override
-	public Void call() {
+	public Void call() throws SQLException {
 		try {
 			connection.commit();
 		} catch (SQLException e) {
-			e.printStackTrace();
+			throw e;
 		}
 
 		return null;
 	}
-
 }
